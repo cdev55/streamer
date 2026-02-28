@@ -2,9 +2,10 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 
 const secret = env.JWT_SECRET;
+const EXPIRES_IN = '7d';
 
-export function signToken(payload: { userId: string }, expiresIn = '7d'): string {
-  return jwt.sign(payload, secret, { expiresIn });
+export function generateToken(userId: string): string {
+  return jwt.sign({ userId }, secret, { expiresIn: EXPIRES_IN });
 }
 
 export function verifyToken(token: string): { userId: string } {

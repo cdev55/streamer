@@ -5,6 +5,7 @@
   "types": "dist/client.d.ts",
   "scripts": {
     "generate": "prisma generate",
+    "build": "tsc",
     "push": "prisma db push",
     "test": "ts-node src/test.ts"
   },

@@ -1,9 +1,14 @@
 import express from 'express';
-import { authRoutes } from './modules/auth/auth.routes';
+import cors from 'cors';
+import { authRoutes } from './routes/auth.routes';
 import { errorMiddleware } from './middleware/error.middleware';
 
 const app = express();
+
+app.use(cors());
 app.use(express.json());
+
+app.get('/health', (_req, res) => res.json({ status: 'OK' }));
 app.use('/auth', authRoutes);
 app.use(errorMiddleware);
 
