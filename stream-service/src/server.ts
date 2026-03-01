@@ -1,3 +1,8 @@
+import path from 'path';
+import { config } from 'dotenv';
+
+config({ path: path.resolve(process.cwd(), '../.env') });
+
 import { app } from './app';
 import { env } from './config/env';
 

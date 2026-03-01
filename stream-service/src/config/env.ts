@@ -1,11 +1,10 @@
-import { z } from 'zod';
+const required = (name: string): string => {
+  const val = process.env[name];
+  if (!val) throw new Error(`Missing required env: ${name}`);
+  return val;
+};
 
-const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.string().default('3001').transform(Number),
-  DATABASE_URL: z.string(),
-  REDIS_URL: z.string().optional(),
-  RABBITMQ_URL: z.string().optional(),
-});
-
-export const env = envSchema.parse(process.env);
+export const env = {
+  PORT: Number(process.env.PORT) || 4002,
+  JWT_SECRET: required('JWT_SECRET'),
+};
