@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { streamService } from '../services/stream.service';
+import { streamService, getStreamStateFromRedis } from '../services/stream.service';
 
 declare global {
   namespace Express {
@@ -20,7 +20,17 @@ export const streamController = {
   async getById(req: Request, res: Response) {
     const stream = await streamService.getById(req.params.id);
     if (!stream) return res.status(404).json({ error: 'Stream not found' });
-    res.json(stream);
+    res.json({
+      id: stream.id,
+      title: stream.title,
+      isLive: stream.isLive,
+      redisState: stream.redisState,
+    });
+  },
+
+  async getState(req: Request, res: Response) {
+    const state = await getStreamStateFromRedis(req.params.id);
+    res.json({ state: state ?? 'OFFLINE' });
   },
 
   async start(req: Request, res: Response) {

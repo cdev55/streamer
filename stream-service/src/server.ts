@@ -3,6 +3,7 @@ import { config } from 'dotenv';
 
 config({ path: path.resolve(process.cwd(), '../.env') });
 
+import './config/redis';
 import { app } from './app';
 import { env } from './config/env';
 
