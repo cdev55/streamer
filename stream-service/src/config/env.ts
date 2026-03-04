@@ -8,4 +8,5 @@ export const env = {
   PORT: Number(process.env.PORT) || 4002,
   JWT_SECRET: required('JWT_SECRET'),
   REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
+  RABBITMQ_URL: process.env.RABBITMQ_URL || 'amqp://localhost:5672',
 };

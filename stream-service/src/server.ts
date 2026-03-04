@@ -5,7 +5,10 @@ config({ path: path.resolve(process.cwd(), '../.env') });
 
 import { connectWithRetry } from '@streamer/database';
 import './config/redis';
+import { initRabbitMQ } from './config/rabbitmq';
 import { app } from './app';
+
+initRabbitMQ();
 import { env } from './config/env';
 
 async function main() {

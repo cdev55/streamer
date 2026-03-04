@@ -1,5 +1,7 @@
 import { db } from '@streamer/database';
 import { redis } from '../config/redis';
+import { publishEvent } from '../events/publisher';
+import { STREAM_STARTED, STREAM_ENDED } from '../events/routingKeys';
 
 const STATE_KEY = (streamId: string) => `stream:${streamId}:state`;
 const SESSION_KEY = (streamId: string) => `stream:${streamId}:session`;
@@ -101,6 +103,17 @@ export const streamService = {
     await setStreamState(streamId, 'LIVE');
     await setStreamSession(streamId, session.id);
 
+    try {
+      await publishEvent(STREAM_STARTED, {
+        streamId,
+        userId,
+        sessionId: session.id,
+        startedAt: session.startedAt,
+      });
+    } catch (err) {
+      console.error('[RabbitMQ] Failed to publish STREAM_STARTED:', err);
+    }
+
     return session;
   },
 
@@ -132,6 +145,17 @@ export const streamService = {
 
     await setStreamState(streamId, 'OFFLINE');
     await deleteStreamSession(streamId);
+
+    try {
+      await publishEvent(STREAM_ENDED, {
+        streamId,
+        userId,
+        sessionId: activeSession.id,
+        endedAt: updatedSession.endedAt,
+      });
+    } catch (err) {
+      console.error('[RabbitMQ] Failed to publish STREAM_ENDED:', err);
+    }
 
     return updatedSession;
   },
