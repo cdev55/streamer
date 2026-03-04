@@ -3,10 +3,19 @@ import { config } from 'dotenv';
 
 config({ path: path.resolve(process.cwd(), '../.env') });
 
+import { connectWithRetry } from '@streamer/database';
 import './config/redis';
 import { app } from './app';
 import { env } from './config/env';
 
-app.listen(env.PORT, () => {
-  console.log(`Stream service listening on port ${env.PORT}`);
+async function main() {
+  await connectWithRetry();
+  app.listen(env.PORT, () => {
+    console.log(`Stream service listening on port ${env.PORT}`);
+  });
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
 });
