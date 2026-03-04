@@ -1,0 +1,58 @@
+logLevel: info
+
+############################################
+# RTMP INGEST
+############################################
+rtmp: yes
+rtmpAddress: :1935
+
+############################################
+# HLS PLAYBACK
+############################################
+hls: yes
+hlsAddress: :8888
+hlsAlwaysRemux: yes
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+hlsSegmentCount: 10
+
+############################################
+# WEBRTC (ULTRA LOW LATENCY)
+############################################
+webrtc: yes
+webrtcAddress: :8889
+webrtcEncryption: no
+webrtcAllowOrigin: "*"
+
+############################################
+# API
+############################################
+api: yes
+apiAddress: :9997
+
+############################################
+# RECORDINGS
+############################################
+# record: yes
+# recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S
+# recordFormat: fmp4
+
+############################################
+# STREAM PATH CONFIG
+############################################
+paths:
+  all:
+    source: publisher
+
+    ########################################
+    # WEBHOOKS
+    ########################################
+    runOnReady: |
+      wget -q -O- --post-data="{\"path\":\"$MTX_PATH\"}" --header="Content-Type: application/json" http://host.docker.internal:4002/webhooks/stream-start
+    runOnNotReady: |
+      wget -q -O- --post-data="{\"path\":\"$MTX_PATH\"}" --header="Content-Type: application/json" http://host.docker.internal:4002/webhooks/stream-end 
+
+    ########################################
+    # RECORDING START
+    ########################################
+    runOnRecordSegmentCreate: curl -X POST http://host.docker.internal:4002/webhooks/segment-created

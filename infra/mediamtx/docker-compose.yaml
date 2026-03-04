@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:1-rpi
+    container_name: mediamtx
+
+    ports:
+      - "1935:1935"   # RTMP ingest
+      - "8888:8888"   # HLS playback
+      - "8889:8889"   # WebRTC playback
+      - "9997:9997"   # API
+
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml
+      - ./recordings:/recordings
+
+    command: /mediamtx.yml
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    restart: unless-stopped
