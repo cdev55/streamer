@@ -2,6 +2,7 @@ import { db } from '@streamer/database';
 import { redis } from '../config/redis';
 import { publishEvent } from '../events/publisher';
 import { STREAM_STARTED, STREAM_ENDED } from '../events/routingKeys';
+import { generatePlaybackUrl } from '../utils/playback';
 
 const STATE_KEY = (streamId: string) => `stream:${streamId}:state`;
 const SESSION_KEY = (streamId: string) => `stream:${streamId}:session`;
@@ -158,5 +159,53 @@ export const streamService = {
     }
 
     return updatedSession;
+  },
+
+  async getPlaybackInfo(streamId: string) {
+    const stream = await db.stream.findUnique({
+      where: { id: streamId },
+      include: { user: { select: { streamKey: true } } },
+    });
+    if (!stream) return null;
+    const redisState = await getStreamStateFromRedis(streamId);
+    const isLive = redisState === 'LIVE';
+    return {
+      stream,
+      isLive,
+    };
+  },
+
+  async getLiveStreamIdsFromRedis(): Promise<string[]> {
+    try {
+      const keys = await redis.keys('stream:*:state');
+      const streamIds: string[] = [];
+      for (const key of keys) {
+        const val = await redis.get(key);
+        if (val === 'LIVE') {
+          const parts = key.split(':');
+          if (parts[0] === 'stream' && parts[1]) streamIds.push(parts[1]);
+        }
+      }
+      return streamIds;
+    } catch (err) {
+      console.error('[Redis] getLiveStreamIdsFromRedis failed:', err);
+      return [];
+    }
+  },
+
+  async getLiveStreamsForPlayback(): Promise<
+    { streamId: string; title: string; playbackUrl: string }[]
+  > {
+    const streamIds = await this.getLiveStreamIdsFromRedis();
+    if (streamIds.length === 0) return [];
+    const streams = await db.stream.findMany({
+      where: { id: { in: streamIds } },
+      include: { user: { select: { streamKey: true } } },
+    });
+    return streams.map((s) => ({
+      streamId: s.id,
+      title: s.title,
+      playbackUrl: generatePlaybackUrl(s.user.streamKey),
+    }));
   },
 };

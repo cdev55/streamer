@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { db } from '@streamer/database';
 import { streamService } from '../services/stream.service';
+import { generatePlaybackUrl } from '../utils/playback';
 
 interface WebhookBody {
   path?: string;
@@ -48,7 +49,12 @@ export async function handleStreamStart(req: Request, res: Response): Promise<vo
 
   try {
     await streamService.startStream(user.id, stream.id);
-    console.log('[MediaMTX] STREAM STARTED', { streamId: stream.id, userId: user.id });
+    const playbackUrl = generatePlaybackUrl(user.streamKey);
+    console.log('[MediaMTX] STREAM STARTED', {
+      streamId: stream.id,
+      userId: user.id,
+      playbackUrl,
+    });
     res.status(200).json({ ok: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

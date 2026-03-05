@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { streamService, getStreamStateFromRedis } from '../services/stream.service';
+import { generatePlaybackUrl } from '../utils/playback';
 
 declare global {
   namespace Express {
@@ -48,6 +49,21 @@ export const streamController = {
   async me(req: Request, res: Response) {
     const userId = req.userId!;
     const streams = await streamService.listByUser(userId);
+    res.json(streams);
+  },
+
+  async getPlayback(req: Request, res: Response) {
+    const info = await streamService.getPlaybackInfo(req.params.id);
+    if (!info) return res.status(404).json({ error: 'Stream not found' });
+    if (!info.isLive) return res.json({ live: false });
+    res.json({
+      live: true,
+      playbackUrl: generatePlaybackUrl(info.stream.user.streamKey),
+    });
+  },
+
+  async getLive(req: Request, res: Response) {
+    const streams = await streamService.getLiveStreamsForPlayback();
     res.json(streams);
   },
 };
