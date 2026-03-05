@@ -3,8 +3,8 @@ import fs from 'fs/promises';
 import { getChannel } from '../config/rabbitmq';
 import { env } from '../config/env';
 import { db } from '@streamer/database';
-import { transcodeTo720p } from '../services/ffmpeg.service';
-import { uploadVod } from '../services/upload.service';
+import { generateAbrHls } from '../services/abr.service';
+import { uploadVodDirectory } from '../services/upload.service';
 import { logger } from '../utils/logger';
 import { RABBIT } from '../config/rabbitmq';
 
@@ -17,11 +17,8 @@ interface StreamEndedPayload {
 
 async function findMostRecentMp4(streamKey: string): Promise<string | null> {
   const dir = path.join(env.RECORDINGS_PATH, streamKey);
-  console.log('[Consumer] Dir', dir);
   try {
     const entries = await fs.readdir(dir, { withFileTypes: true });
-    console.log('[Consumer] Entries', entries);
-
     const mp4s = entries
       .filter((e) => e.isFile() && e.name.endsWith('.mp4'))
       .map((e) => path.join(dir, e.name));
@@ -50,6 +47,20 @@ async function findMostRecentMp4(streamKey: string): Promise<string | null> {
   }
 }
 
+async function rmDirRecursive(dir: string): Promise<void> {
+  try {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) await rmDirRecursive(full);
+      else await fs.unlink(full);
+    }
+    await fs.rmdir(dir);
+  } catch {
+    // ignore
+  }
+}
+
 export async function startStreamEndedConsumer(): Promise<void> {
   const channel = await getChannel();
   if (!channel) {
@@ -62,8 +73,8 @@ export async function startStreamEndedConsumer(): Promise<void> {
       if (!msg) return;
       try {
         const payload = JSON.parse(msg.content.toString()) as StreamEndedPayload;
-        const { streamId, userId, sessionId, endedAt } = payload;
-        logger.info('[Consumer] stream.ended', { streamId, sessionId, endedAt });
+        const { streamId, sessionId } = payload;
+        logger.info('[Consumer] stream.ended', { streamId, sessionId });
 
         const stream = await db.stream.findUnique({
           where: { id: streamId },
@@ -81,18 +92,24 @@ export async function startStreamEndedConsumer(): Promise<void> {
           channel.ack(msg);
           return;
         }
-        const outputPath = path.join('/tmp', `${streamId}.mp4`);
-        await transcodeTo720p(inputPath, outputPath);
-        const vodUrl = await uploadVod(streamId, outputPath);
+
+        const outputDir = path.join('/tmp', streamId);
+
+        logger.info('TRANSCODING STARTED', { streamId });
+        await generateAbrHls(inputPath, outputDir);
+        logger.info('TRANSCODING COMPLETED', { streamId });
+
+        logger.info('UPLOAD STARTED', { streamId });
+        const baseUrl = await uploadVodDirectory(streamId, outputDir);
+        logger.info('UPLOAD COMPLETED', { streamId });
+
+        const vodUrl = `${baseUrl}/master.m3u8`;
         await db.stream.update({
           where: { id: streamId },
-          data: { vodUrl },
+          data: { vodUrl } as { vodUrl: string },
         });
-        try {
-          await fs.unlink(outputPath);
-        } catch {
-          // ignore cleanup failure
-        }
+
+        await rmDirRecursive(outputDir);
         logger.info('[Consumer] VOD ready', { streamId, vodUrl });
         channel.ack(msg);
       } catch (err) {
