@@ -1,19 +1,23 @@
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { createReadStream } from 'fs';
-import path from 'path';
 import { s3Client, BUCKET } from '../config/s3';
+import { env } from '../config/env';
+import { logger } from '../utils/logger';
 
-export const uploadService = {
-  async upload(localPath: string, streamId: string): Promise<string> {
-    const key = `transcoded/${streamId}${path.extname(localPath)}`;
-    const body = createReadStream(localPath);
-    await s3Client.send(
-      new PutObjectCommand({
-        Bucket: BUCKET,
-        Key: key,
-        Body: body,
-      })
-    );
-    return key;
-  },
-};
+const KEY_PREFIX = 'vod';
+
+export async function uploadVod(streamId: string, filePath: string): Promise<string> {
+  const key = `${KEY_PREFIX}/${streamId}/final.mp4`;
+  const body = createReadStream(filePath);
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: key,
+      Body: body,
+      ContentType: 'video/mp4',
+    })
+  );
+  const publicUrl = `https://${BUCKET}.s3.${env.AWS_REGION}.amazonaws.com/${key}`;
+  logger.info('[S3] Uploaded VOD', publicUrl);
+  return publicUrl;
+}

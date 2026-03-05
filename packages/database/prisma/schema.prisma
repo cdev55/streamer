@@ -25,6 +25,7 @@ model Stream {
   title       String
   description String?
   isLive      Boolean  @default(false)
+  vodUrl      String?
   sessions    StreamSession[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

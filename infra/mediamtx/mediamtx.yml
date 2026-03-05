@@ -33,9 +33,9 @@ apiAddress: :9997
 ############################################
 # RECORDINGS
 ############################################
-# record: yes
-# recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S
-# recordFormat: fmp4
+record: yes
+recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S
+recordFormat: fmp4
 
 ############################################
 # STREAM PATH CONFIG

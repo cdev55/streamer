@@ -1,22 +1,33 @@
 import ffmpeg from 'fluent-ffmpeg';
 import path from 'path';
-import fs from 'fs/promises';
+// import ffmpegStatic from 'ffmpeg-static';
+import { logger } from '../utils/logger';
 
-const INPUT_DIR = process.env.INPUT_DIR || '/tmp/streams';
-const OUTPUT_DIR = process.env.OUTPUT_DIR || '/tmp/transcoded';
+// if (ffmpegStatic) {
+//   ffmpeg.setFfmpegPath(ffmpegStatic);
+// }
 
-export const ffmpegService = {
-  async transcode(streamId: string): Promise<string> {
-    const inputPath = path.join(INPUT_DIR, `${streamId}.ts`);
-    const outputPath = path.join(OUTPUT_DIR, `${streamId}.mp4`);
-    await fs.mkdir(OUTPUT_DIR, { recursive: true });
-
-    return new Promise((resolve, reject) => {
-      ffmpeg(inputPath)
-        .output(outputPath)
-        .on('end', () => resolve(outputPath))
-        .on('error', reject)
-        .run();
-    });
-  },
-};
+export async function transcodeTo720p(
+  inputPath: string,
+  outputPath: string
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .outputOptions([
+        '-c:v libx264',
+        '-preset veryfast',
+        '-vf scale=1280:720',
+        '-c:a aac',
+      ])
+      .output(outputPath)
+      .on('end', () => {
+        logger.info('[FFmpeg] Transcode finished', outputPath);
+        resolve();
+      })
+      .on('error', (err) => {
+        logger.error('[FFmpeg]', err);
+        reject(err);
+      })
+      .run();
+  });
+}
