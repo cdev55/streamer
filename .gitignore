@@ -27,3 +27,14 @@ npm-debug.log*
 
 # Misc
 *.local
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.flv
+*.wmv
+*.webm
+*.mp3
+*.wav
+*.ogg
+*.m4a

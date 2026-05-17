@@ -26,6 +26,8 @@ export const streamController = {
       title: stream.title,
       isLive: stream.isLive,
       redisState: stream.redisState,
+      vodUrl: stream.vodUrl ?? undefined,
+      user: stream.user ? { id: stream.user.id, username: stream.user.username } : undefined,
     });
   },
 
@@ -56,7 +58,7 @@ export const streamController = {
     const info = await streamService.getPlaybackInfo(req.params.id);
     if (!info) return res.status(404).json({ error: 'Stream not found' });
     if (!info.isLive) return res.json({ live: false });
-    res.json({
+    res.status(200).json({
       live: true,
       playbackUrl: generatePlaybackUrl(info.stream.user.streamKey),
     });

@@ -10,8 +10,10 @@ import { app } from './app';
 
 initRabbitMQ();
 import { env } from './config/env';
+import { startViewerCleanup } from './modules/viewers/viewer.cleanup';
 
 async function main() {
+  startViewerCleanup();
   await connectWithRetry();
   app.listen(env.PORT, () => {
     console.log(`Stream service listening on port ${env.PORT}`);

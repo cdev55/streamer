@@ -200,12 +200,13 @@ export const streamService = {
     if (streamIds.length === 0) return [];
     const streams = await db.stream.findMany({
       where: { id: { in: streamIds } },
-      include: { user: { select: { streamKey: true } } },
+      include: { user: { select: { streamKey: true, username: true } } },
     });
     return streams.map((s) => ({
       streamId: s.id,
       title: s.title,
       playbackUrl: generatePlaybackUrl(s.user.streamKey),
+      username: s.user.username,
     }));
   },
 };
